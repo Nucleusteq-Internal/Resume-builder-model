@@ -1,0 +1,7 @@
+Flask
+PyMuPDF
+langchain_groq
+requests
+langchain
+flask_cors
+python-docx

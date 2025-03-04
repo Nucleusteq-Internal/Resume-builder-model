@@ -1,11 +1,12 @@
-FROM python:3.10-slim
+# syntax=docker/dockerfile:1
 
-EXPOSE 8000
+FROM python:3.8-slim-buster
 
-WORKDIR /app
-COPY requirements.txt /app
-RUN python -m pip install --upgrade pip && \
-    python -m pip install -r requirements.txt --no-cache-dir
-COPY . /app
+WORKDIR /python-docker
 
-CMD [ "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000" ]
+COPY requirements.txt requirements.txt
+RUN pip3 install -r requirements.txt
+
+COPY . .
+EXPOSE 5000
+CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0"]

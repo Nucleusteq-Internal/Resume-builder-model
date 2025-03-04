@@ -21,7 +21,7 @@ on:
 env:
   tf_version: "1.3.3"
   tg_version: "0.40.1"
-  target_operation: "${{ github.event.inputs.operation || 'plan' }}"
+  target_operation: "${{ github.event.inputs.operation || 'apply' }}"
   target_environment: prod
   working_dir: "/home/runner/work/Resume-builder-model/Resume-builder-model/platforms/infra/terragrunt"
   role_to_assume: "arn:aws:iam::547568624982:role/infra-protal-prod-github-actions-role"

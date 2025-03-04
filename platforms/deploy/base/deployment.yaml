@@ -22,7 +22,7 @@ spec:
               cpu: 1000m
               memory: 1000Mi
           ports:
-            - containerPort: 8000
+            - containerPort: 5000
           env:
             - name: env
               value: "prod"

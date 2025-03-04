@@ -5,8 +5,8 @@ metadata:
   namespace: plasma-namespace
 spec:
   ports:
-    - port: 8000
-      targetPort: 8000
+    - port: 5000
+      targetPort: 5000
       protocol: TCP
   type: NodePort
   selector:

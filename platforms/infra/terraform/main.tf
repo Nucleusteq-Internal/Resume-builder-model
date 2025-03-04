@@ -109,8 +109,7 @@ data "aws_iam_policy_document" "pod_policy_document" {
       "secretsmanager:DescribeSecret"
     ]
     resources = [
-      "arn:aws:secretsmanager:${var.aws_region}:${var.aws_account_id}:secret:portal_${var.tags.environment}/*",
-      "arn:aws:secretsmanager:${var.aws_region}:${var.aws_account_id}:secret:portal_db_${var.tags.environment}_master_password*"
+      "arn:aws:secretsmanager:${var.aws_region}:${var.aws_account_id}:secret:resume_builder_user_${var.tags.environment}_password*",
     ]
   }
 }

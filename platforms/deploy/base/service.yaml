@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: resume-builder-model-api-svc
+  namespace: plasma-namespace
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+  type: NodePort
+  selector:
+    app-name: resume-builder-model-api

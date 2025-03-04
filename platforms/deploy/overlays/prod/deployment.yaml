@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resume-builder-model-api
+  namespace: plasma-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app-name: resume-builder-model-api
+  template:
+    metadata:
+      labels:
+        app-name: resume-builder-model-api
+    spec:
+      serviceAccountName: resume-builder-model-api-service-account
+      containers:
+        - name: resume-builder-model-api
+          image: image_name
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 1000Mi
+          ports:
+            - containerPort: 8000
+          env:
+            - name: env
+              value: "prod"
+            - name: AWS_ROLE_ARN
+              value: arn:aws:iam::547568624982:role/portal-prod-resume-builder-model-api-pod-role
+            - name: AWS_WEB_IDENTITY_TOKEN_FILE
+              value: /var/run/secrets/eks.amazonaws.com/serviceaccount/token
+            - name: AWS_ROLE_SESSION_NAME
+              value: default-session
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+          volumeMounts:
+            - mountPath: /var/run/secrets/eks.amazonaws.com/serviceaccount
+              name: aws-iam-token
+              readOnly: true
+      volumes:
+        - name: aws-iam-token
+          projected:
+            defaultMode: 420
+            sources:
+              - serviceAccountToken:
+                  audience: sts.amazonaws.com
+                  expirationSeconds: 8640000
+                  path: token

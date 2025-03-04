@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::547568624982:role/portal-prod-resume-builder-model-api-pod-role
+  name: resume-builder-model-api-service-account
+  namespace: plasma-namespace

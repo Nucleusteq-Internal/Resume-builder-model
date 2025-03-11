@@ -3,8 +3,8 @@ name: "Terraform Operations for Prod"
 on:
   push:
     branches:
-      # - branch_name
-      - feature/infra_and_workflows
+      - branch_name
+      # - feature/infra_and_workflows
     paths:
       - "platforms/infra/**"
       - ".github/workflows/terraform-operations-prod.yaml"

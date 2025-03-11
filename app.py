@@ -136,12 +136,12 @@ profileData
         return None
 
 
-@app.route("/", methods=["GET"])
+@app.route("/resume/builder/model/", methods=["GET"])
 def index():
     return render_template("index.html")
 
 
-@app.route("/upload", methods=["POST"])
+@app.route("/resume/builder/model/upload", methods=["POST"])
 @cross_origin(origin='*')
 def upload_file():
     if "resume" not in request.files:

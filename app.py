@@ -6,14 +6,14 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 import json, requests
 import re
-from flask_cors import cross_origin
+from flask_cors import cross_origin, CORS
 from docx import Document
 
 
 
 app = Flask(__name__, template_folder="templates")
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
-
+CORS(app)
 
 # Initialize ChatGroq with the API key and model name
 groq_api_key = "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"
@@ -142,7 +142,7 @@ def index():
 
 
 @app.route("/upload", methods=["POST"])
-@cross_origin()
+@cross_origin(origin='*')
 def upload_file():
     if "resume" not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
@@ -180,7 +180,8 @@ def upload_file():
 
     # return json_data
 
-    springboot_url = "http://localhost:8080/api/candidate-profiles/upload"
+    # springboot_url = "http://localhost:8080/resume/builder/backend/api/candidate-profiles/upload"
+    springboot_url = "https://www.resume.plasma.nucleusteq.com/resume/builder/backend/api/candidate-profiles/upload"
 
     # # # # Send JSON data to Spring Boot API
     try:

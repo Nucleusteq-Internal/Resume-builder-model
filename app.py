@@ -64,7 +64,15 @@ def extract_text_from_word(docx_path):
     
     return text
 
-
+def sanitize_json_string(json_string):
+    """
+    Sanitize the JSON string by replacing invalid characters and fixing encoding issues.
+    """
+    # Replace invalid characters (e.g., â) with a space or remove them
+    sanitized_string = re.sub(r"[^\x20-\x7E]", "", json_string)  # Remove non-ASCII characters
+    sanitized_string = sanitized_string.replace("\\n", " ")  # Replace newlines with spaces
+    sanitized_string = sanitized_string.replace("\\t", " ")  # Replace tabs with spaces
+    return sanitized_string
 def parse_resume(pdf_text):
 
     keys_list = """
@@ -103,7 +111,7 @@ profileData
     You are an expert in resume evaluation. Extract the following information from the provided resume text and format it as a JSON object and make sure not affect the json keys, all keys must be same and also nesting must be same not change the structure of it:
 
     {keys_list}
-    **Note**: "At the time of returning the response please do not change the keys. Please make sure it would be same after generating response in json. Alo not change in the nested keys or nested json or dictonary it would also be same as mentioned in keys list. Only fetch information that i mentioned in the keylist from the resume not more than that."
+    **Note**: "At the time of returning the response please do not change the keys. Please make sure it would be same after generating response in json. Also not change in the nested keys or nested json or dictonary it would also be same as mentioned in keys list. Only fetch information that i mentioned in the keylist from the resume not more than that. Please verify it a correct and valid json format. Also make sure that the json keys are not changed and also the nested keys are not changed. Please do not change any keys or nested keys in the json format. If you find any invalid characters or encoding issues, please fix them before returning the JSON response. The JSON should be well-formed and valid."
     **Bro! You don't get what I said? I told not change any json keys and also nested keys"
     **Ignore any bullet points in response but give full info
     Resume:
@@ -136,12 +144,12 @@ profileData
         return None
 
 
-@app.route("/", methods=["GET"])
+@app.route("/resume/builder/model/", methods=["GET"])
 def index():
     return render_template("index.html")
 
 
-@app.route("/upload", methods=["POST"])
+@app.route("/resume/builder/model/upload", methods=["POST"])
 @cross_origin(origin='*')
 def upload_file():
     if "resume" not in request.files:
@@ -175,13 +183,26 @@ def upload_file():
 
     # Send text to Groq AI to parse into structured JSON
     extracted_data = parse_resume(extracted_text)
+    print("Raw extracted data:", extracted_data)
+    if not extracted_data:
+        return jsonify({"error": "Failed to process resume text"}), 500
+    try:
+        
+        sanitized_data = sanitize_json_string(extracted_data)
+        json_data = json.loads(sanitized_data)
+        print(json_data)
+    except json.JSONDecodeError as e:
+        # Handle JSON decoding error
+        print(f"JSON decoding error: {e}")
+        print("Sanitized response was:", sanitized_data)
+        return jsonify({"error": "Failed to parse JSON response", "data":sanitized_data}), 500
     json_data = json.loads(extracted_data)
     print(json_data)
 
     # return json_data
 
-    # springboot_url = "http://localhost:8080/resume/builder/backend/api/candidate-profiles/upload"
-    springboot_url = "https://www.resume.plasma.nucleusteq.com/resume/builder/backend/api/candidate-profiles/upload"
+    springboot_url = "http://localhost:8080/resume/builder/backend/api/candidate-profiles/upload"
+    # springboot_url = "https://www.resume.plasma.nucleusteq.com/resume/builder/backend/api/candidate-profiles/upload"
 
     # # # # Send JSON data to Spring Boot API
     try:

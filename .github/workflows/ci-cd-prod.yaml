@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - branch_name
-      # - feature/infra_and_workflows
+      - feature/infra_and_workflows
     paths-ignore:
       - "**/README.md"
 

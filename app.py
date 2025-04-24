@@ -27,7 +27,7 @@ def extract_text_from_pdf(pdf_path):
             for page in pdf:
                 text += page.get_text()
 
-        text = text.replace("\n", "")
+        text = text.replace("\n", " ")
         # print(text)
         # print("tetx extracted sucessfyllu")
     except Exception as e:
@@ -201,8 +201,8 @@ def upload_file():
 
     # return json_data
 
-    springboot_url = "http://localhost:8080/resume/builder/backend/api/candidate-profiles/upload"
-    # springboot_url = "https://www.resume.plasma.nucleusteq.com/resume/builder/backend/api/candidate-profiles/upload"
+    # springboot_url = "http://localhost:8080/resume/builder/backend/api/candidate-profiles/upload"
+    springboot_url = "https://www.resume.plasma.nucleusteq.com/resume/builder/backend/api/candidate-profiles/upload"
 
     # # # # Send JSON data to Spring Boot API
     try:

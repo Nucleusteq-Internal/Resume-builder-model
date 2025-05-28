@@ -8,6 +8,10 @@ import json, requests
 import re
 from flask_cors import cross_origin, CORS
 from docx import Document
+from transformers import AutoTokenizer
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+import textwrap
+from dotenv import load_dotenv
 
 
 
@@ -15,9 +19,42 @@ app = Flask(__name__, template_folder="templates")
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 CORS(app)
 
+load_dotenv()
+
 # Initialize ChatGroq with the API key and model name
-groq_api_key = "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"
-llm = ChatGroq(groq_api_key=groq_api_key, model_name="Gemma2-9b-it")
+groq_api_key = os.environ.get("GROQ_API_KEY")
+llm = ChatGroq(groq_api_key=groq_api_key, model_name=os.environ.get("LLM_Model"))
+
+keys_list = textwrap.dedent("""
+name
+
+email
+
+contactNo
+
+objective
+
+profileData 
+  - professionalSummary 
+  - certificates (type : list)
+  - technicalSkills 
+      - technology (type : list)
+      - programming (type : list)
+      - tools (type : list)
+  - professionalExperience
+      - jobTitle
+      - companyName
+      - projectName
+      - startDate
+      - endDate
+      - techStack (type : str)
+      - details (type : str)
+  - education (type : list of dictionaries)
+      - course
+      - collegeName
+      - duration
+
+""")
 
 
 def extract_text_from_pdf(pdf_path):
@@ -73,52 +110,39 @@ def sanitize_json_string(json_string):
     sanitized_string = sanitized_string.replace("\\n", " ")  # Replace newlines with spaces
     sanitized_string = sanitized_string.replace("\\t", " ")  # Replace tabs with spaces
     return sanitized_string
+
 def parse_resume(pdf_text):
+    """
+    Parses resume text into a structured JSON format using LLM in two steps:
+    1. Extracts logical resume sections.
+    2. Sends sectioned data back to the LLM for final JSON formatting.
+    Includes retry logic and JSON sanitization.
+    """
 
-    keys_list = """
-name
-
-email
-
-contactNo
-
-objective
-
-profileData 
-  - professionalSummary 
-  - certificates (type : list)
-  - technicalSkills 
-      - technology (type : list)
-      - programming (type : list)
-      - tools (type : list)
-  - professionalExperience
-      - jobTitle
-      - companyName
-      - projectName
-      - startDate
-      - endDate
-      - techStack (type : str)
-      - details (type : str)
-  - education (type : list of dictionaries)
-      - course
-      - collegeName
-      - duration
-
-"""
+    
 
     prompt_template = PromptTemplate(
         template=f"""
-    You are an expert in resume evaluation. Extract the following information from the provided resume text and format it as a JSON object and make sure not affect the json keys, all keys must be same and also nesting must be same not change the structure of it:
+You are an expert in resume evaluation. Extract the following information from the resume text.
+The format must match this schema exactly:
+{keys_list}
 
-    {keys_list}
-    **Note**: "At the time of returning the response please do not change the keys. Please make sure it would be same after generating response in json. Also not change in the nested keys or nested json or dictonary it would also be same as mentioned in keys list. 
-    Only fetch information that i mentioned in the keylist from the resume not more than that. Please verify it a correct and valid json format. Also make sure that the json keys are not changed and also the nested keys are not changed. Please do not change any keys or nested keys in the json format.
-    If you find any invalid characters or encoding issues, please fix them before returning the JSON response. The JSON should be well-formed and valid."
-    **Bro! You don't get what I said? I told not change any json keys and also nested keys"
-    **Ignore any bullet points in response but give full info
-    Resume:
-    {{resume_text}}
-    """,
+**Strict Instructions**:
+- Do not change any key or nesting in the JSON.
+- Do not add or remove keys.
+- Only extract and populate available data.
+- If a value is not found, return it as an empty string or empty list.
+- Ignore bullets and formatting symbols.
+- Ensure it is a valid, parsable JSON response.
+- Do not include any additional text or explanations.
+- Do not include any backticks or code blocks.
+- add data to suitable keys and values
+- double check the keys_list and the JSON response. Do not add any extra keys or values.
+
+Resume:
+{{resume_text}}
+""",
+
         input_variables=["resume_text"],
     )
 
@@ -154,6 +178,11 @@ def index():
 @app.route("/resume/builder/model/upload", methods=["POST"])
 @cross_origin(origin='*')
 def upload_file():
+    userId = request.form.get("userId")  
+    role = request.form.get("role")
+
+    print(f"Received parameters: userId={userId}, role={role}")
+
     if "resume" not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
 
@@ -192,33 +221,53 @@ def upload_file():
         
         sanitized_data = sanitize_json_string(extracted_data)
         json_data = json.loads(sanitized_data)
-        print(json_data)
+        # print(json_data)
     except json.JSONDecodeError as e:
         # Handle JSON decoding error
         print(f"JSON decoding error: {e}")
         print("Sanitized response was:", sanitized_data)
         return jsonify({"error": "Failed to parse JSON response", "data":sanitized_data}), 500
-    json_data = json.loads(extracted_data)
-    print(json_data)
+    # json_data = json.loads(extracted_data)
+    # print(json_data)
 
     # return json_data
+    api_url = os.environ.get("SPRINGBOOT_API_URL")
+    print(f"SPRINGBOOT URL: {api_url}")
+    if((role == "ROLE_EMPLOYEE") and (userId is not None)):
+        userId = int(userId)
+        springboot_url = f"{api_url}/resume/builder/backend/api/user-profiles/update-profile/{userId}"
+        
+        try:
+            response = requests.put(springboot_url, json=json_data)
+            if response.status_code == 201:
+                return jsonify({"message": "Resume processed and saved successfully"}), 201
+            else:
+                return (
+                    jsonify({"error": "Failed to save resume data to Spring Boot API"}),
+                    response.status_code,
+                )
+        except requests.exceptions.RequestException as e:
+            print(f"Error sending data to Spring Boot API: {e}")
+            return jsonify({"error": "Unable to connect to Spring Boot API"}), 500
+        
+    
 
-    # springboot_url = "http://localhost:8080/resume/builder/backend/api/candidate-profiles/upload"
-    springboot_url = "https://www.resume.plasma.nucleusteq.com/resume/builder/backend/api/candidate-profiles/upload"
+    else:
+        springboot_url = f"{api_url}/resume/builder/backend/api/candidate-profiles/upload"
+        try:
+            response = requests.post(springboot_url, json=json_data)
+            if response.status_code == 201:
+                return jsonify({"message": "Resume processed and saved successfully"}), 201
+            else:
+                return (jsonify({"error": "Failed to save resume data to Spring Boot API"}),response.status_code,)
+        except requests.exceptions.RequestException as e:
+            print(f"Error sending data to Spring Boot API: {e}")
+            return jsonify({"error": "Unable to connect to Spring Boot API"}), 500
+        # springboot_url = "http://localhost:8080/resume/builder/backend/api/candidate-profiles/upload"
+        # springboot_url = "https://www.resume.plasma.nucleusteq.com/resume/builder/backend/api/candidate-profiles/upload"
 
     # # # # Send JSON data to Spring Boot API
-    try:
-        response = requests.post(springboot_url, json=json_data)
-        if response.status_code == 201:
-            return jsonify({"message": "Resume processed and saved successfully"}), 201
-        else:
-            return (
-                jsonify({"error": "Failed to save resume data to Spring Boot API"}),
-                response.status_code,
-            )
-    except requests.exceptions.RequestException as e:
-        print(f"Error sending data to Spring Boot API: {e}")
-        return jsonify({"error": "Unable to connect to Spring Boot API"}), 500
+    
 
 
 if __name__ == "__main__":

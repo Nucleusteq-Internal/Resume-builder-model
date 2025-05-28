@@ -5,3 +5,5 @@ requests
 langchain
 flask_cors
 python-docx
+transformers
+python-dotenv

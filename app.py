@@ -22,7 +22,8 @@ CORS(app)
 load_dotenv()
 
 # Initialize ChatGroq with the API key and model name
-groq_api_key = os.environ.get("GROQ_API_KEY")
+# groq_api_key = os.environ.get("GROQ_API_KEY")
+groq_api_key = "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"
 llm = ChatGroq(groq_api_key=groq_api_key, model_name=os.environ.get("LLM_Model"))
 
 keys_list = textwrap.dedent("""

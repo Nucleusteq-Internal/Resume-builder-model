@@ -12,6 +12,16 @@ from transformers import AutoTokenizer
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import textwrap
 from dotenv import load_dotenv
+import boto3
+import logging
+
+# Initialize logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 
 
@@ -23,7 +33,38 @@ load_dotenv()
 
 # Initialize ChatGroq with the API key and model name
 # groq_api_key = os.environ.get("GROQ_API_KEY")
-groq_api_key = "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"
+def get_secret():
+    """Fetch secrets from AWS Secrets Manager and set them as environment variables (for production)."""
+    
+    aws_region = os.environ.get("AWS_REGION", "us-west-2")  # Default to us-west-2 if not set
+    secret_name = os.environ.get("SECRET_NAME",'resume_builder_prod_groq_api_key')
+
+    try:
+        # Initialize AWS Secrets Manager client
+        client = boto3.client("secretsmanager", region_name=aws_region)
+
+        # Retrieve secret
+        response = client.get_secret_value(SecretId=secret_name)
+
+        # Parse secret (AWS Secrets Manager stores secrets as a JSON string)
+        secret_data = json.loads(response["SecretString"])
+
+        # Set each secret key-value pair as an environment variable
+        for key, value in secret_data.items():
+            os.environ[key] = value
+
+        logger.info(f"Secrets successfully loaded for environment")
+
+    except Exception as e:
+        logger.error(f"Error retrieving secrets: {e}", exc_info=True)
+        raise RuntimeError("Failed to load secrets from AWS Secrets Manager.")
+
+
+resume_builder_secrets = get_secret()
+groq_api_key = os.environ.get("GROQ_API_KEY")
+if not groq_api_key:
+    raise RuntimeError("GROQ_API_KEY is not set in environment variables.")
+
 llm = ChatGroq(groq_api_key=groq_api_key, model_name=os.environ.get("LLM_Model"))
 
 keys_list = textwrap.dedent("""
@@ -111,6 +152,7 @@ def sanitize_json_string(json_string):
     sanitized_string = sanitized_string.replace("\\n", " ")  # Replace newlines with spaces
     sanitized_string = sanitized_string.replace("\\t", " ")  # Replace tabs with spaces
     return sanitized_string
+
 
 def parse_resume(pdf_text):
     """

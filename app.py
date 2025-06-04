@@ -33,39 +33,39 @@ load_dotenv()
 
 # Initialize ChatGroq with the API key and model name
 # groq_api_key = os.environ.get("GROQ_API_KEY")
-def get_secret():
-    """Fetch secrets from AWS Secrets Manager and set them as environment variables (for production)."""
+# def get_secret():
+#     """Fetch secrets from AWS Secrets Manager and set them as environment variables (for production)."""
     
-    aws_region = os.environ.get("AWS_REGION", "us-west-2")  # Default to us-west-2 if not set
-    secret_name = os.environ.get("SECRET_NAME",'resume_builder_prod_groq_api_key')
+#     aws_region = os.environ.get("AWS_REGION", "us-west-2")  # Default to us-west-2 if not set
+#     secret_name = os.environ.get("SECRET_NAME",'resume_builder_prod_groq_api_key')
 
-    try:
-        # Initialize AWS Secrets Manager client
-        client = boto3.client("secretsmanager", region_name=aws_region)
+#     try:
+#         # Initialize AWS Secrets Manager client
+#         client = boto3.client("secretsmanager", region_name=aws_region)
 
-        # Retrieve secret
-        response = client.get_secret_value(SecretId=secret_name)
+#         # Retrieve secret
+#         response = client.get_secret_value(SecretId=secret_name)
 
-        # Parse secret (AWS Secrets Manager stores secrets as a JSON string)
-        secret_data = json.loads(response["SecretString"])
+#         # Parse secret (AWS Secrets Manager stores secrets as a JSON string)
+#         secret_data = json.loads(response["SecretString"])
 
-        # Set each secret key-value pair as an environment variable
-        for key, value in secret_data.items():
-            os.environ[key] = value
+#         # Set each secret key-value pair as an environment variable
+#         for key, value in secret_data.items():
+#             os.environ[key] = value
 
-        logger.info(f"Secrets successfully loaded for environment")
+#         logger.info(f"Secrets successfully loaded for environment")
 
-    except Exception as e:
-        logger.error(f"Error retrieving secrets: {e}", exc_info=True)
-        raise RuntimeError("Failed to load secrets from AWS Secrets Manager.")
+#     except Exception as e:
+#         logger.error(f"Error retrieving secrets: {e}", exc_info=True)
+#         raise RuntimeError("Failed to load secrets from AWS Secrets Manager.")
 
 
-resume_builder_secrets = get_secret()
+# resume_builder_secrets = get_secret()
 groq_api_key = os.environ.get("GROQ_API_KEY")
 if not groq_api_key:
     raise RuntimeError("GROQ_API_KEY is not set in environment variables.")
 
-llm = ChatGroq(groq_api_key=groq_api_key, model_name=os.environ.get("LLM_Model"))
+llm = ChatGroq(groq_api_key="gsk_309VDgogbpQcLbVwZ7BzWG"+groq_api_key, model_name=os.environ.get("LLM_Model"))
 
 keys_list = textwrap.dedent("""
 name
